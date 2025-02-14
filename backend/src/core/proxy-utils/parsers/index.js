@@ -76,7 +76,46 @@ function URI_PROXY() {
     };
     return { name, test, parse };
 }
+function URI_SOCKS() {
+    const name = 'URI SOCKS Parser';
+    const test = (line) => {
+        return /^socks:\/\//.test(line);
+    };
+    const parse = (line) => {
+        // parse url
+        // eslint-disable-next-line no-unused-vars
+        let [__, type, auth, server, port, query, name] = line.match(
+            /^(socks)?:\/\/(?:(.*)@)?(.*?)(?::(\d+?))?(\?.*?)?(?:#(.*?))?$/,
+        );
+        if (port) {
+            port = parseInt(port, 10);
+        } else {
+            $.error(`port is not present in line: ${line}`);
+            throw new Error(`port is not present in line: ${line}`);
+        }
+        let username, password;
+        if (auth) {
+            const parsed = Base64.decode(decodeURIComponent(auth)).split(':');
+            username = parsed[0];
+            password = parsed[1];
+        }
 
+        const proxy = {
+            name:
+                name != null
+                    ? decodeURIComponent(name)
+                    : `${type} ${server}:${port}`,
+            type: 'socks5',
+            server,
+            port,
+            username,
+            password,
+        };
+
+        return proxy;
+    };
+    return { name, test, parse };
+}
 // Parse SS URI format (only supports new SIP002, legacy format is depreciated).
 // reference: https://github.com/shadowsocks/shadowsocks-org/wiki/SIP002-URI-Scheme
 function URI_SS() {
@@ -113,6 +152,7 @@ function URI_SS() {
                 query = parsed[2];
             }
             content = Base64.decode(content);
+
             if (query) {
                 if (/(&|\?)v2ray-plugin=/.test(query)) {
                     const parsed = query.match(/(&|\?)v2ray-plugin=(.*?)(&|$)/);
@@ -126,8 +166,8 @@ function URI_SS() {
                 }
                 content = `${content}${query}`;
             }
-            userInfoStr = content.split('@')[0];
-            serverAndPortArray = content.match(/@([^/]*)(\/|$)/);
+            userInfoStr = content.match(/(^.*)@/)?.[1];
+            serverAndPortArray = content.match(/@([^/@]*)(\/|$)/);
         } else if (content.includes('?')) {
             const parsed = content.match(/(\?.*)$/);
             query = parsed[1];
@@ -799,8 +839,11 @@ function URI_TUIC() {
     const parse = (line) => {
         line = line.split(/tuic:\/\//)[1];
         // eslint-disable-next-line no-unused-vars
-        let [__, uuid, password, server, ___, port, ____, addons = '', name] =
-            /^(.*?):(.*?)@(.*?)(:(\d+))?\/?(\?(.*?))?(?:#(.*?))?$/.exec(line);
+        let [__, auth, server, port, addons = '', name] =
+            /^(.*?)@(.*?)(?::(\d+))?\/?(?:\?(.*?))?(?:#(.*?))?$/.exec(line);
+        auth = decodeURIComponent(auth);
+        let [uuid, ...passwordParts] = auth.split(':');
+        let password = passwordParts.join(':');
         port = parseInt(`${port}`, 10);
         if (isNaN(port)) {
             port = 443;
@@ -826,12 +869,14 @@ function URI_TUIC() {
             value = decodeURIComponent(value);
             if (['alpn'].includes(key)) {
                 proxy[key] = value ? value.split(',') : undefined;
-            } else if (['allow-insecure'].includes(key)) {
+            } else if (['allow_insecure'].includes(key)) {
                 proxy['skip-cert-verify'] = /(TRUE)|1/i.test(value);
-            } else if (['disable-sni', 'reduce-rtt'].includes(key)) {
-                proxy[key] = /(TRUE)|1/i.test(value);
+            } else if (['fast_open'].includes(key)) {
+                proxy.tfo = true;
+            } else if (['disable_sni', 'reduce_rtt'].includes(key)) {
+                proxy[key.replace(/_/g, '-')] = /(TRUE)|1/i.test(value);
             } else {
-                proxy[key] = value;
+                proxy[key.replace(/_/g, '-')] = value;
             }
         }
 
@@ -1467,6 +1512,7 @@ function isIP(ip) {
 
 export default [
     URI_PROXY(),
+    URI_SOCKS(),
     URI_SS(),
     URI_SSR(),
     URI_VMess(),

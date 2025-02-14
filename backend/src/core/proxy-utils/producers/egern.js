@@ -184,6 +184,7 @@ export default function Egern_Producer() {
                         websocket: proxy.websocket,
                     };
                 } else if (proxy.type === 'vmess') {
+                    // Egern：传输层，支持 ws/wss/http1/http2/tls，不配置则为 tcp
                     let security = proxy.cipher;
                     if (
                         security &&
@@ -212,7 +213,7 @@ export default function Egern_Producer() {
                         };
                     } else if (proxy.network === 'http') {
                         proxy.transport = {
-                            http: {
+                            http1: {
                                 method: proxy['http-opts']?.method,
                                 path: proxy['http-opts']?.path,
                                 headers: {
@@ -225,9 +226,27 @@ export default function Egern_Producer() {
                                 skip_tls_verify: proxy['skip-cert-verify'],
                             },
                         };
-                    } else if (proxy.network === 'tcp' || !proxy.network) {
+                    } else if (proxy.network === 'h2') {
                         proxy.transport = {
-                            [proxy.tls ? 'tls' : 'tcp']: {
+                            http2: {
+                                method: proxy['h2-opts']?.method,
+                                path: proxy['h2-opts']?.path,
+                                headers: {
+                                    Host: Array.isArray(
+                                        proxy['h2-opts']?.headers?.Host,
+                                    )
+                                        ? proxy['h2-opts']?.headers?.Host[0]
+                                        : proxy['h2-opts']?.headers?.Host,
+                                },
+                                skip_tls_verify: proxy['skip-cert-verify'],
+                            },
+                        };
+                    } else if (
+                        (proxy.network === 'tcp' || !proxy.network) &&
+                        proxy.tls
+                    ) {
+                        proxy.transport = {
+                            tls: {
                                 sni: proxy.tls ? proxy.sni : undefined,
                                 skip_tls_verify: proxy.tls
                                     ? proxy['skip-cert-verify']
