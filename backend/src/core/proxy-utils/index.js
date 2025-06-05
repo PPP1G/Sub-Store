@@ -25,6 +25,7 @@ import { getFlag, removeFlag, getISO, MMDB } from '@/utils/geo';
 import Gist from '@/utils/gist';
 import { isPresent } from './producers/utils';
 import { doh } from '@/utils/dns';
+import JSON5 from 'json5';
 
 function preprocess(raw) {
     for (const processor of PROXY_PREPROCESSORS) {
@@ -142,9 +143,9 @@ async function processFn(
                         ? `#${rawArgs[1]}`
                         : ''
                 }`;
-                const downloadUrlMatch = url.match(
-                    /^\/api\/(file|module)\/(.+)/,
-                );
+                const downloadUrlMatch = url
+                    .split('#')[0]
+                    .match(/^\/api\/(file|module)\/(.+)/);
                 if (downloadUrlMatch) {
                     let type = '';
                     try {
@@ -173,6 +174,17 @@ async function processFn(
                             `Error when loading ${type}: ${item.args.content}.\n Reason: ${err}`,
                         );
                         throw new Error(`无法加载 ${type}: ${url}`);
+                    }
+                } else if (url?.startsWith('/')) {
+                    try {
+                        const fs = eval(`require("fs")`);
+                        script = fs.readFileSync(url.split('#')[0], 'utf8');
+                        // $.info(`Script loaded: >>>\n ${script}`);
+                    } catch (err) {
+                        $.error(
+                            `Error when reading local script: ${item.args.content}.\n Reason: ${err}`,
+                        );
+                        throw new Error(`无法从该路径读取脚本文件: ${url}`);
                     }
                 } else {
                     // if this is a remote script, download it
@@ -336,6 +348,7 @@ export const ProxyUtils = {
     doh,
     Buffer,
     Base64,
+    JSON5,
 };
 
 function tryParse(parser, line) {
