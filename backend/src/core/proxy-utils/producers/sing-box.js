@@ -519,6 +519,7 @@ const vlessParser = (proxy = {}) => {
     };
     if (parsedProxy.server_port < 0 || parsedProxy.server_port > 65535)
         throw 'invalid port';
+    if (proxy.xudp) parsedProxy.packet_encoding = 'xudp';
     if (proxy['fast-open']) parsedProxy.udp_fragment = true;
     if (proxy.flow === 'xtls-rprx-vision') parsedProxy.flow = proxy.flow;
     if (proxy.network === 'ws') wsParser(proxy, parsedProxy);
@@ -677,6 +678,11 @@ const anytlsParser = (proxy = {}) => {
         parsedProxy.idle_session_check_interval = `${proxy['idle-session-check-interval']}s`;
     if (/^\d+$/.test(proxy['idle-session-timeout']))
         parsedProxy.idle_session_timeout = `${proxy['idle-session-timeout']}s`;
+    if (/^\d+$/.test(proxy['min-idle-session']))
+        parsedProxy.min_idle_session = parseInt(
+            `${proxy['min-idle-session']}`,
+            10,
+        );
     detourParser(proxy, parsedProxy);
     tlsParser(proxy, parsedProxy);
     return parsedProxy;

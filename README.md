@@ -26,13 +26,14 @@ Core functionalities:
 
 ### Supported Input Formats
 
-> ⚠️ Do not use `Shadowrocket` or `NekoBox` to export URI and then import it as input. The URIs exported in this way may not be standard URIs.
+> ⚠️ Do not use `Shadowrocket` or `NekoBox` to export URI and then import it as input. The URIs exported in this way may not be standard URIs. However, we have already supported some very common non-standard URIs (such as VMess, VLESS).
 
 - [x] Proxy URI Scheme(`socks5`, `socks5+tls`, `http`, `https`(it's ok))
 
   example: `socks5+tls://user:pass@ip:port#name`
 
 - [x] URI(AnyTLS, SOCKS, SS, SSR, VMess, VLESS, Trojan, Hysteria, Hysteria 2, TUIC v5, WireGuard)
+  > Please note, HTTP(s) does not have a standard URI format, so it is not supported. Please use other formats.
 - [x] Clash Proxies YAML
 - [x] Clash Proxy JSON(single line)
 - [x] QX (SS, SSR, VMess, Trojan, HTTP, SOCKS5, VLESS)
@@ -42,7 +43,7 @@ Core functionalities:
 - [x] Clash.Meta (Direct, SS, SSR, VMess, Trojan, HTTP, SOCKS5, Snell, VLESS, WireGuard, Hysteria, Hysteria 2, TUIC, SSH, mieru, AnyTLS)
 - [x] Stash (SS, SSR, VMess, Trojan, HTTP, SOCKS5, Snell, VLESS, WireGuard, Hysteria, TUIC, Juicity, SSH)
 
-Deprecated:
+Deprecated(The frontend doesn't show it, but the backend still supports it, with the query parameter `target=Clash`):
 
 - [x] Clash (SS, SSR, VMess, Trojan, HTTP, SOCKS5, Snell, VLESS, WireGuard)
 
